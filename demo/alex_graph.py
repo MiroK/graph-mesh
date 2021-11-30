@@ -135,6 +135,7 @@ if __name__ == '__main__':
     from graph_mesh import *
     from dolfin import File
     from xii.meshing.embedded_mesh import TangentCurve
+    from graph_mesh.orientation import compute_io_orientation
     
     # NOTE: one issue with this mesh generator is that it allows children
     # branches to cross parants. However, this happens if there are many generations
@@ -158,3 +159,9 @@ if __name__ == '__main__':
 
     tangent = TangentCurve(mesh)
     File('tangent.pvd') << tangent
+
+    # Branches with IO
+    oriented = compute_io_orientation(cell_f)
+
+    for color, (ff, foo) in oriented.items():
+        File(f'ff_{color}.pvd') << foo
