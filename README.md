@@ -4,11 +4,11 @@ For usage see the [demo folder](https://github.com/MiroK/graph-mesh/blob/master/
 using the [BRAVA](http://cng.gmu.edu/brava/all_subjects.php?clear=1) database we can do something like this
 
   <p align="center">
-    <img src="https://github.com/MiroK/graph-mesh/doc/coloring.png">
+    <img src="https://github.com/MiroK/graph-mesh/blob/master/doc/coloring.png">
   </p>
 
   <p align="center">
-    <img src="https://github.com/MiroK/graph-mesh/doc/tangent.png">
+    <img src="https://github.com/MiroK/graph-mesh/blob/master/doc/tangent.png">
   </p>
 
 ## Installation
