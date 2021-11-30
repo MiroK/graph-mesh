@@ -136,6 +136,7 @@ if __name__ == '__main__':
     from dolfin import File
     from xii.meshing.embedded_mesh import TangentCurve
     from graph_mesh.orientation import compute_io_orientation
+    from graph_mesh.coloring import greedy_color
     
     # NOTE: one issue with this mesh generator is that it allows children
     # branches to cross parants. However, this happens if there are many generations
@@ -165,3 +166,7 @@ if __name__ == '__main__':
 
     for color, (ff, foo) in oriented.items():
         File(f'ff_{color}.pvd') << foo
+
+    sparse_color = greedy_color(cell_f, terminals)
+
+    File('sparse_color.pvd') << sparse_color

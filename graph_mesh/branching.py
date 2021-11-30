@@ -15,7 +15,6 @@ def color_branches(mesh):
     c2v = mesh.topology()(1, 0)
 
     terminals = {v: set(v2c(v)) for v in range(mesh.num_vertices()) if len(v2c(v)) != 2}
-    out_terminals = deepcopy(terminals)
     
     cell_f = df.MeshFunction('size_t', mesh, 1, 0)
     if not terminals:
@@ -32,6 +31,8 @@ def color_branches(mesh):
     
     values = cell_f.array()
     branch_colors, loop_colors, color = [], [], 0
+    # It will be useful to talk about end vertices of colored branches
+    color_connectivity = {}
 
     exhausted = False
     while not exhausted:
@@ -43,7 +44,7 @@ def color_branches(mesh):
         while vertex_cells:
             link_cell = vertex_cells.pop()
             v0 = vertex
-
+            
             branch = [link_cell]
             # v0 --
             while next_vertex(link_cell, v0) not in terminals:
@@ -61,6 +62,8 @@ def color_branches(mesh):
             else:
                 branch_colors.append(color)
             values[branch] = color
+
+            color_connectivity[color] = (v0, vertex)
             
             # Preclude leaving from vertex in a look
             link_cell in vertex_cells and vertex_cells.remove(link_cell)
@@ -68,4 +71,4 @@ def color_branches(mesh):
             # same way we arrived
             v0 in terminals and link_cell in terminals[v0] and terminals[v0].remove(link_cell)
 
-    return cell_f, branch_colors, loop_colors, out_terminals
+    return cell_f, branch_colors, loop_colors, color_connectivity
