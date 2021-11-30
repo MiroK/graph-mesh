@@ -36,6 +36,9 @@ def greedy_color(color_f, color_connectivity):
         # Just to keep track of how many we ended up using
         greedy_colors.add(color+1)
 
+        del icc[key]
+    assert not icc
+
     ans = df.MeshFunction('size_t', mesh, 1, 0)
     ans.array()[:] = sparse_color
 
