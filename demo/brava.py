@@ -32,12 +32,28 @@ if __name__ == '__main__':
     from graph_mesh.orientation import compute_io_orientation
     from graph_mesh.coloring import greedy_color
     from graph_mesh.swc import swc2graph
+    import dolfin as df
+    import numpy as np
+    
 
     subject = 'BG001'
     swc_path = get_swc(subject)
     G = swc2graph(swc_path)
 
-    mesh, radii_f = mesh_graph(G)
+    mesh, radii_f, ntype_f = mesh_graph(G)
+
+    # Recenter center of mass
+    r = df.SpatialCoordinate(mesh)
+    l = df.assemble(df.Constant(1)*df.dx(domain=mesh))
+    x = np.array([df.assemble(xi*df.dx) for xi in r])/l
+
+    #mesh.coordinates()[:] -= x.reshape((1, len(x)))
+    # Shift for paraview
+    #shift = np.array([[-4, -9, -28]])
+    #mesh.coordinates()[:] -= shift
+
+    #mesh.coordinates()[:] *= 0.9
+    #mesh.rotate(-90, 0)
 
     File(f'{subject}_radii_f_coarse.pvd') << radii_f
     

@@ -142,7 +142,7 @@ if __name__ == '__main__':
     # branches to cross parants. However, this happens if there are many generations
     # so here we keep it low to be on the safe side
     G = make_graph(N=5)
-    mesh, radii_f = mesh_graph(G)
+    mesh, radii_f, _ = mesh_graph(G)
 
     File('radii_f_coarse.pvd') << radii_f    
     # Refine the mesh

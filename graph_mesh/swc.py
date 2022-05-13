@@ -9,6 +9,7 @@ def swc2graph(swc_file):
     # 1 1 0.0 0.0 0.0 7.3875 -1
 
     with open(swc_file, 'r') as swc:
+        comments = []
         # Get comments out of the way
         iter_points = map(lambda l: parse(l.strip().split()),
                           # Talk about lambdas without side-effects :)
@@ -26,6 +27,6 @@ def swc2graph(swc_file):
             assert count == index
 
             G.add_node(index, pos=np.array([x, y, z]))
-            G.add_edge(index, parent, radius=radius)
+            G.add_edge(index, parent, radius=radius, ntype=ntype)
 
     return G

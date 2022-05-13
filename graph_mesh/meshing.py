@@ -23,16 +23,21 @@ def mesh_graph(graph):
     for i, x in enumerate(mesh_coordinates):
         editor.add_vertex(i, x)
 
-    cell_data = np.zeros(graph.number_of_edges())
+    radius_cell_data = np.zeros(graph.number_of_edges())
+    ntype_cell_data = np.zeros(graph.number_of_edges())
 
     edges = graph.edges()
     for ci, (ni, nj) in enumerate(edges):
         editor.add_cell(ci, (mapping[ni], mapping[nj]))
-        cell_data[ci] = edges[(ni, nj)]['radius']
+        radius_cell_data[ci] = edges[(ni, nj)]['radius']
+        ntype_cell_data[ci] = edges[(ni, nj)]['ntype']        
     
     editor.close()
 
     radius_data = Function(FunctionSpace(mesh, 'DG', 0))
-    radius_data.vector().set_local(cell_data)
+    radius_data.vector().set_local(radius_cell_data)
 
-    return mesh, radius_data
+    ntype_data = Function(FunctionSpace(mesh, 'DG', 0))
+    ntype_data.vector().set_local(ntype_cell_data)
+
+    return mesh, radius_data, ntype_data
