@@ -4,3 +4,5 @@
 *.pvd
 *.vtu
 *.swc
+*.h5
+*.egg-info/
