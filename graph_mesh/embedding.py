@@ -1,4 +1,5 @@
 from gmshnics import msh_gmsh_model, mesh_from_gmsh
+from .utils import PCA_axis, rotation_matrix
 import numpy as np
 import gmsh
 
@@ -26,10 +27,11 @@ def get_bbox(graph, scaling, align):
     raise ValueError
 
 
-def box_embed(graph, scaling, align=False, args=[]):
-
+def box_embed(graph, scaling, align=False, view=False, args=[]):
+    '''Embded graph in its [aligned] bounding box'''
     origin, dx, dy, dz = get_bbox(graph, scaling, align=align)
-
+    print(origin, dx, dy, dx)
+    
     gmsh.initialize(args)
 
     model = gmsh.model
@@ -50,6 +52,10 @@ def box_embed(graph, scaling, align=False, args=[]):
     # Embedd the lines
     model.mesh.embed(1, lines, 3, vol)    
     fac.synchronize()
+
+    if view:
+        gmsh.fltk.initialize()
+        gmsh.fltk.run()
 
     nodes, topologies = msh_gmsh_model(model, 3)
     mesh, entity_functions = mesh_from_gmsh(nodes, topologies)    
@@ -100,8 +106,78 @@ def addBox(fac, origin, dx, dy, dz):
     return {3: [vol], 2: plane_surfaces}
 
 
-# --------------------------------------------------------------------
 
+
+
+def stl_embed(graph, stl_path, scale=0.8, view=False, args=[]):
+    '''Returns modified graph that fits "better" to the STL bounding box'''
+    gmsh.initialize(args)
+
+    gmsh.merge(stl_path)
+    
+    model = gmsh.model
+    fac = model.geo
+
+    vol = fac.addVolume([fac.addSurfaceLoop([1])])
+    fac.synchronize()
+
+    brain_nodes = gmsh.model.mesh.getNodes()[1].reshape((-1, 3))
+    # We would like to align the brain ...
+    com_brain, vals_brain, axis_brain = PCA_axis(brain_nodes)
+    
+    nodes = graph.nodes
+    # ... with the graph
+    graph_nodes = np.array([nodes[n]['pos'] for n in nodes])
+    com_graph, vals_graph, axis_graph = PCA_axis(graph_nodes)
+
+    shift = com_brain - com_graph
+    graph_nodes += shift.reshape((1, -1))
+
+    u, v = axis_graph[:, 0], axis_brain[:, 0]
+    u, v = u/np.linalg.norm(u), v/np.linalg.norm(v)
+    ax = np.cross(u, v)
+    ax = ax/np.linalg.norm(ax)
+    angle = np.arccos(np.dot(u, v))
+    R = rotation_matrix(axis=ax, angle=angle)
+    
+    graph_nodes[:] = np.dot(graph_nodes-com_brain, R)
+
+    com_graph, vals_graph, axis_graph = PCA_axis(graph_nodes)
+
+    shift = com_brain - com_graph
+    graph_nodes += shift.reshape((1, -1))
+
+    # Scale
+    com_graph = np.mean(graph_nodes, axis=0)
+    graph_nodes[:] = graph_nodes*scale + (1-scale)*com_graph.reshape((1, -1))
+    
+    vertices = {n: fac.addPoint(*graph_nodes[i]) for i, n in enumerate(nodes)}
+
+    lines = [fac.addLine(vertices[p], vertices[q]) for p, q in graph.edges]
+    fac.synchronize()
+    # Mark them for lookup
+    model.addPhysicalGroup(1, lines, 1)
+    # Mark volume to get it meshes too
+    model.addPhysicalGroup(3, [vol], 1)
+    # Embedd the lines
+    model.mesh.embed(1, lines, 3, vol)    
+    fac.synchronize()
+
+    if view:
+        gmsh.fltk.initialize()
+        gmsh.fltk.run()
+    gmsh.finalize()
+
+    for i, n in enumerate(nodes):
+        nodes[n]['pos'] = graph_nodes[i]
+
+    edges = graph.edges()
+    for ci, (ni, nj) in enumerate(edges):
+        edges[(ni, nj)]['radius'] = scale*edges[(ni, nj)]['radius'] 
+            
+    return graph
+
+# --------------------------------------------------------------------
 
 if __name__ == '__main__':
     import numpy as np
@@ -122,6 +198,8 @@ if __name__ == '__main__':
     
     l = fac.addLine(center, top)
 
+    model.addPhysicalGroup(2, [1], 42)
+    
     fac.synchronize()
     
     model.mesh.embed(0, [top], 2, entities[2][-1])

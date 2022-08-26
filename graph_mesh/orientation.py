@@ -5,7 +5,7 @@ from dolfin import *
 from xii import *
 
 
-def compute_io_orientation(color_f):
+def compute_io_orientation(color_f, tau):
     '''
     Let color_f be a cell function of a 1d in (dim > 1) mesh marking the 
     branches. Using a mesh global tangent field tau we compute facet functions
@@ -18,10 +18,7 @@ def compute_io_orientation(color_f):
     # fenics only so fenics tangential derivative should probably be replaced by
     # dot(grad(f), tau)
     mesh = color_f.mesh()
-
-    tau = TangentCurve(mesh)
-    tangents = tau.vector().get_local()
-
+    assert mesh.id() == tau.function_space().mesh().id()
     # What we want to build
     oriented = {}
 
@@ -56,6 +53,11 @@ def compute_io_orientation(color_f):
         facet_f = MeshFunction('size_t', branch, 0, 0)
         facet_f.array()[:] = o[vertex_to_dof_map(V)]
         
-        oriented[color] = (facet_f, f)  # P1 is here just for plotting
+        oriented[color] = (facet_f, f, tau_branch)  # P1 is here just for plotting
 
     return oriented
+
+# --------------------------------------------------------------------
+
+if __name__ == '__main__':
+    pass

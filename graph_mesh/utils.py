@@ -1,4 +1,5 @@
 import dolfin as df
+import numpy as np
 
 
 def is_loop(mesh):
@@ -96,3 +97,29 @@ def walk_cells(arg, tag=None):
         link_cell = next_cell(v0, link_cell)
 
         yield link_cell, c2v(link_cell)[0] == v0
+
+
+def PCA_axis(x):
+    '''origin and principal component axis of point cloud'''
+    xb = np.mean(x, axis=0).reshape((1, -1))
+
+    B = x - xb
+    C = np.dot(B.T, B)
+
+    vals, vecs = np.linalg.eigh(C)
+
+    return xb, vals, vecs
+
+
+def rotation_matrix(angle, axis):
+    '''Via quarternions'''
+    q0 = np.cos(angle/2)
+    q1 = np.sin(angle/2)*axis[0]
+    q2 = np.sin(angle/2)*axis[1]
+    q3 = np.sin(angle/2)*axis[2]
+
+    R = np.array([[(q0**2 + q1**2 - q2**2 - q3**2), 2*(q1*q2 - q0*q3), 2*(q1*q3 + q0*q2)],
+                  [2*(q2*q1 + q0*q3), (q0**2 - q1**2 + q2**2 - q3**2), 2*(q2*q3 - q0*q1)],
+                  [2*(q3*q1 - q0*q2), 2*(q3*q2 + q0*q1), (q0**2 - q1**2 - q2**2 + q3**2)]])
+
+    return R

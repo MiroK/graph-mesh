@@ -21,7 +21,7 @@ def greedy_color(color_f, color_connectivity):
     G = nx.line_graph(dG)
     # Then the job is to color the graph ...
     colormap = nx.algorithms.coloring.greedy_color(G)
-    
+
     # Unique coloring from branch encoding in terms of vertices
     icc = {tuple(sorted(v)): c for c, v in color_connectivity.items()}
 
@@ -31,7 +31,11 @@ def greedy_color(color_f, color_connectivity):
     greedy_colors = set()
     # ... and translate the coloring
     for key, color in colormap.items():
-        branch, = np.where(color_f == icc[key])
+        try:
+            branch, = np.where(color_f == icc[key])
+        except KeyError:
+            key = tuple(reversed(key))
+            branch, = np.where(color_f == icc[key])
         sparse_color[branch] = color+1
         # Just to keep track of how many we ended up using
         greedy_colors.add(color+1)

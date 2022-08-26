@@ -28,7 +28,6 @@ def get_swc(subject):
 if __name__ == '__main__':
     from graph_mesh import *
     from dolfin import File
-    from xii.meshing.embedded_mesh import TangentCurve
     from graph_mesh.orientation import compute_io_orientation
     from graph_mesh.coloring import greedy_color
     from graph_mesh.swc import swc2graph
@@ -36,32 +35,29 @@ if __name__ == '__main__':
     import numpy as np
     
 
-    subject = 'BG001'
+    subject = 'BG0002'
     swc_path = get_swc(subject)
     G = swc2graph(swc_path)
 
     mesh, radii_f, ntype_f = mesh_graph(G)
-
-    # Recenter center of mass
-    r = df.SpatialCoordinate(mesh)
-    l = df.assemble(df.Constant(1)*df.dx(domain=mesh))
-    x = np.array([df.assemble(xi*df.dx) for xi in r])/l
-
-    #mesh.coordinates()[:] -= x.reshape((1, len(x)))
-    # Shift for paraview
-    #shift = np.array([[-4, -9, -28]])
-    #mesh.coordinates()[:] -= shift
-
-    #mesh.coordinates()[:] *= 0.9
-    #mesh.rotate(-90, 0)
 
     File(f'{subject}_radii_f_coarse.pvd') << radii_f
     
     cell_f, bcolors, lcolors, terminals = color_branches(mesh)
     File(f'{subject}_graph_colored.pvd') << cell_f
 
-    tangent = TangentCurve(mesh)
-    File(f'{subject}_tangent.pvd') << tangent
-
     sparse_color = greedy_color(cell_f, terminals)
     File(f'{subject}_sparse_color.pvd') << sparse_color
+
+    # Save mesh as coordinates and cell 2 vertex matrix
+    coordinates = mesh.coordinates()
+    v2c = mesh.cells()    # Each row is a cell encoded in terms of its vertices
+
+    from scipy.io import savemat, loadmat
+
+    savemat('f{subject}.mat', {'coordinates': coordinates, 'cells': v2c})
+
+    data = loadmat('f{subject}.mat')
+
+    assert np.linalg.norm(coordinates-data['coordinates']) < 1E-13
+    assert np.linalg.norm(v2c-data['cells']) < 1E-13    
