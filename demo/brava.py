@@ -28,7 +28,6 @@ def get_swc(subject):
 if __name__ == '__main__':
     from graph_mesh import *
     from dolfin import File
-    from graph_mesh.orientation import compute_io_orientation
     from graph_mesh.coloring import greedy_color
     from graph_mesh.swc import swc2graph
     import dolfin as df
@@ -61,3 +60,51 @@ if __name__ == '__main__':
 
     assert np.linalg.norm(coordinates-data['coordinates']) < 1E-13
     assert np.linalg.norm(v2c-data['cells']) < 1E-13    
+
+    # Just for illustration
+    from graph_mesh.orientation import compute_io_orientation
+    from xii import *
+    import time
+    
+    tau = TangentCurve(mesh)
+
+    submesh_data = compute_io_orientation(cell_f, tau)
+    
+    # There will be one global pressure space
+    Q = df.FunctionSpace(mesh, 'CG', 1)
+    p, q = df.TrialFunction(Q), df.TestFunction(Q)
+
+    Grad = lambda f, t: df.dot(df.grad(f), t)
+
+    A01, A10 = 0, 0
+
+    print('PSEUDOSTOKES ASSEMBLY')
+    then = time.time()
+
+    nbranches = len(bcolors)
+    # This is withough the coupling
+    a = np.zeros((nbranches+1, nbranches+1)).tolist()
+
+    Qindex = nbranches
+    
+    for Vindex, color in enumerate(bcolors):
+        facet_f, branch, tau_branch = submesh_data[color]
+
+        Vi = df.FunctionSpace(branch, 'CG', 2)
+        ui, vi = df.TrialFunction(Vi), df.TestFunction(Vi)
+
+        Rp_i, Rq_i = Restriction(p, branch), Restriction(q, branch)
+        dxi = df.Measure('dx', domain=branch)
+
+        a[Vindex][Vindex] = df.inner(Grad(ui, tau_branch), Grad(vi, tau_branch))*dxi
+        a[Vindex][Qindex] = df.inner(Grad(vi, tau_branch), Rp_i)*dxi
+        a[Qindex][Vindex] = df.inner(Grad(ui, tau_branch), Rq_i)*dxi
+
+    A = ii_assemble(a)
+
+    print('Done', time.time()-then)
+
+    for Vindex, color in enumerate(bcolors):
+        assert A[Vindex][Vindex].norm('linf') > 0
+        assert ii_convert(A[Vindex][Qindex]).norm('linf') > 0
+        assert ii_convert(A[Qindex][Vindex]).norm('linf') > 0        

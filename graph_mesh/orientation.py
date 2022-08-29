@@ -53,7 +53,7 @@ def compute_io_orientation(color_f, tau):
         facet_f = MeshFunction('size_t', branch, 0, 0)
         facet_f.array()[:] = o[vertex_to_dof_map(V)]
         
-        oriented[color] = (facet_f, f, tau_branch)  # P1 is here just for plotting
+        oriented[color] = (facet_f, branch, tau_branch)  # P1 is here just for plotting
 
     return oriented
 
